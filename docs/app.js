@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+const { useEffect, useMemo, useRef, useState } = React;
 
 const quickPrompts = [
   'Neon city in the rain, holographic mist',
@@ -41,6 +41,30 @@ const keyPresets = [
   { label: 'Paste key manually', value: 'manual' },
 ];
 
+const fingerSystems = [
+  {
+    name: '5-Finger Harmonic Lattice',
+    description:
+      'Each fingertip anchors a chord tone. Spread distance controls chord voicing, while Z-depth shifts harmonic tension.',
+  },
+  {
+    name: 'Ribbon Constellations',
+    description:
+      'Swipe arcs create ribbon synths that lock to the generated scale. Velocity becomes grain density.',
+  },
+  {
+    name: 'Pulse Weaving',
+    description:
+      'Index + thumb pinch captures a pulse loop. Move your palm to scatter echoes across the terrain.',
+  },
+];
+
+const audioShrines = [
+  { id: 'north-gate', x: -24, y: 12, z: 30, timbre: 'glass choir' },
+  { id: 'rift-lake', x: 8, y: -10, z: 18, timbre: 'sub-harmonic bloom' },
+  { id: 'solar-loom', x: 22, y: 6, z: -12, timbre: 'granular ribbon' },
+];
+
 const SynesthesiaApp = () => {
   const canvasRef = useRef(null);
   const [activeMode, setActiveMode] = useState('traveler');
@@ -54,6 +78,18 @@ const SynesthesiaApp = () => {
   const [apiKey, setApiKey] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [neuralStatus, setNeuralStatus] = useState('Awaiting authentication');
+  const [cameraStatus, setCameraStatus] = useState('Camera offline');
+  const [handStatus, setHandStatus] = useState('Hand tracking idle');
+  const [cameraStream, setCameraStream] = useState(null);
+  const [harmonyProfile, setHarmonyProfile] = useState(
+    window?.GestureEngine?.mapHandMetricsToHarmony?.({}) ?? {
+      tensionProfile: 'suspended',
+      voicing: 'open',
+      grainDensity: 0,
+      loopCapture: false,
+      scale: ['C', 'D', 'E', 'G', 'A'],
+    }
+  );
 
   const skyGradient = useMemo(
     () => ({
@@ -66,7 +102,7 @@ const SynesthesiaApp = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return undefined;
     const ctx = canvas.getContext('2d');
     let frame = 0;
     let animationFrame = null;
@@ -147,7 +183,7 @@ const SynesthesiaApp = () => {
   }, [audioReactivity, depthBoost, skyGradient]);
 
   useEffect(() => {
-    if (dreamStatus !== 'Synthesizing') return;
+    if (dreamStatus !== 'Synthesizing') return undefined;
     let progress = 0;
     setDreamProgress(0);
     const interval = setInterval(() => {
@@ -162,6 +198,14 @@ const SynesthesiaApp = () => {
     }, 240);
     return () => clearInterval(interval);
   }, [dreamStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [cameraStream]);
 
   const handleDreamSubmit = (event) => {
     event.preventDefault();
@@ -181,6 +225,34 @@ const SynesthesiaApp = () => {
     } else {
       setNeuralStatus('Key required to open neural interface');
     }
+  };
+
+  const handleCameraAccess = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraStatus('Camera API unavailable in this browser');
+      return;
+    }
+    try {
+      setCameraStatus('Requesting camera access...');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      setCameraStream(stream);
+      setCameraStatus('Camera streaming to MediaPipe rig');
+      setHandStatus('Hand tracking calibrated');
+    } catch (error) {
+      setCameraStatus('Camera access denied');
+      setHandStatus('Hand tracking paused');
+    }
+  };
+
+  const handleGesturePreview = () => {
+    if (!window?.GestureEngine?.mapHandMetricsToHarmony) return;
+    const nextProfile = window.GestureEngine.mapHandMetricsToHarmony({
+      fingerSpread: Math.random(),
+      depth: Math.random(),
+      velocity: Math.random(),
+      pinch: Math.random(),
+    });
+    setHarmonyProfile(nextProfile);
   };
 
   return (
@@ -282,6 +354,39 @@ const SynesthesiaApp = () => {
               </button>
               <span style={{ fontSize: '13px', color: '#8fa2ff' }}>{neuralStatus}</span>
             </div>
+            <div
+              style={{
+                marginTop: '18px',
+                padding: '14px',
+                borderRadius: '14px',
+                border: '1px solid rgba(120, 150, 255, 0.25)',
+                background: 'rgba(12, 10, 26, 0.7)',
+              }}
+            >
+              <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#7f95ff', textTransform: 'uppercase' }}>
+                Camera + Hand Rig
+              </p>
+              <button
+                type="button"
+                onClick={handleCameraAccess}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(120, 150, 255, 0.45)',
+                  background: 'rgba(30, 40, 90, 0.6)',
+                  color: '#dfe6ff',
+                  cursor: 'pointer',
+                  width: '100%',
+                  fontWeight: 600,
+                }}
+              >
+                Enable Camera + Hand Rig
+              </button>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#9fb0ff' }}>
+                <p style={{ margin: '2px 0' }}>Camera: {cameraStatus}</p>
+                <p style={{ margin: '2px 0' }}>Hands: {handStatus}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -313,6 +418,31 @@ const SynesthesiaApp = () => {
           <p style={{ color: '#b8c3ff', fontSize: '14px' }}>
             Full 3D tracking mapped to Z-space. Push your hands toward the lens to plunge deep into the soundscape.
           </p>
+          {isUnlocked && (
+            <>
+              <button
+                type="button"
+                onClick={handleCameraAccess}
+                style={{
+                  marginTop: '12px',
+                  padding: '10px 12px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(120, 150, 255, 0.45)',
+                  background: 'rgba(30, 40, 90, 0.6)',
+                  color: '#dfe6ff',
+                  cursor: 'pointer',
+                  width: '100%',
+                  fontWeight: 600,
+                }}
+              >
+                Enable Camera + Hand Rig
+              </button>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#9fb0ff' }}>
+                <p style={{ margin: '2px 0' }}>Camera: {cameraStatus}</p>
+                <p style={{ margin: '2px 0' }}>Hands: {handStatus}</p>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -612,6 +742,36 @@ const SynesthesiaApp = () => {
                 style={{ width: '100%' }}
               />
             </div>
+            <div style={{ marginTop: '14px' }}>
+              <p style={{ fontSize: '12px', color: '#7f95ff', textTransform: 'uppercase' }}>Gesture Harmony Preview</p>
+              <button
+                type="button"
+                onClick={handleGesturePreview}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(120, 150, 255, 0.25)',
+                  background: 'rgba(20, 18, 40, 0.7)',
+                  color: '#c7d0ff',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  marginTop: '8px',
+                }}
+              >
+                Simulate Gesture → Harmony
+              </button>
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#b8c3ff' }}>
+                <p style={{ margin: '2px 0' }}>Tension: {harmonyProfile.tensionProfile}</p>
+                <p style={{ margin: '2px 0' }}>Voicing: {harmonyProfile.voicing}</p>
+                <p style={{ margin: '2px 0' }}>
+                  Grain Density: {(harmonyProfile.grainDensity * 100).toFixed(0)}%
+                </p>
+                <p style={{ margin: '2px 0' }}>
+                  Loop Capture: {harmonyProfile.loopCapture ? 'Engaged' : 'Idle'}
+                </p>
+              </div>
+            </div>
           </div>
         </aside>
       </main>
@@ -695,8 +855,74 @@ const SynesthesiaApp = () => {
           </div>
         </div>
       </section>
+
+      <section
+        style={{
+          marginTop: '28px',
+          padding: '18px',
+          borderRadius: '22px',
+          border: '1px solid rgba(120, 150, 255, 0.2)',
+          background: 'rgba(10, 8, 26, 0.72)',
+        }}
+      >
+        <p style={{ fontSize: '12px', color: '#7f95ff', textTransform: 'uppercase' }}>
+          Natural AR Instrument System
+        </p>
+        <h3 style={{ margin: '8px 0 14px' }}>A hand language built for performance</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          {fingerSystems.map((system) => (
+            <div
+              key={system.name}
+              style={{
+                padding: '12px',
+                borderRadius: '16px',
+                border: '1px solid rgba(120, 150, 255, 0.2)',
+                background: 'rgba(18, 14, 36, 0.6)',
+              }}
+            >
+              <h4 style={{ margin: '0 0 8px' }}>{system.name}</h4>
+              <p style={{ color: '#b8c3ff', margin: 0 }}>{system.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section
+        style={{
+          marginTop: '28px',
+          padding: '18px',
+          borderRadius: '22px',
+          border: '1px solid rgba(120, 150, 255, 0.2)',
+          background: 'rgba(12, 10, 28, 0.75)',
+        }}
+      >
+        <p style={{ fontSize: '12px', color: '#7f95ff', textTransform: 'uppercase' }}>Spatial Audio Shrines</p>
+        <p style={{ color: '#b8c3ff', marginTop: '8px' }}>
+          Persistent acoustic landmarks that reveal harmonic zones as you fly through the world.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          {audioShrines.map((shrine) => (
+            <div
+              key={shrine.id}
+              style={{
+                padding: '12px',
+                borderRadius: '14px',
+                border: '1px solid rgba(120, 150, 255, 0.2)',
+                background: 'rgba(18, 14, 36, 0.6)',
+              }}
+            >
+              <strong style={{ display: 'block', marginBottom: '4px' }}>{shrine.id}</strong>
+              <p style={{ margin: '0 0 6px', color: '#9fb0ff' }}>{shrine.timbre}</p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#b8c3ff' }}>
+                x:{shrine.x} y:{shrine.y} z:{shrine.z}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
 
-export default SynesthesiaApp;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<SynesthesiaApp />);
