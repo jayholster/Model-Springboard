@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+const { useEffect, useMemo, useRef, useState } = React;
 
 const quickPrompts = [
   'Neon city in the rain, holographic mist',
@@ -66,7 +66,7 @@ const SynesthesiaApp = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return undefined;
     const ctx = canvas.getContext('2d');
     let frame = 0;
     let animationFrame = null;
@@ -147,7 +147,7 @@ const SynesthesiaApp = () => {
   }, [audioReactivity, depthBoost, skyGradient]);
 
   useEffect(() => {
-    if (dreamStatus !== 'Synthesizing') return;
+    if (dreamStatus !== 'Synthesizing') return undefined;
     let progress = 0;
     setDreamProgress(0);
     const interval = setInterval(() => {
@@ -699,4 +699,5 @@ const SynesthesiaApp = () => {
   );
 };
 
-export default SynesthesiaApp;
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<SynesthesiaApp />);
