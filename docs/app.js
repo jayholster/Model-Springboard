@@ -41,6 +41,24 @@ const keyPresets = [
   { label: 'Paste key manually', value: 'manual' },
 ];
 
+const fingerSystems = [
+  {
+    name: '5-Finger Harmonic Lattice',
+    description:
+      'Each fingertip anchors a chord tone. Spread distance controls chord voicing, while Z-depth shifts harmonic tension.',
+  },
+  {
+    name: 'Ribbon Constellations',
+    description:
+      'Swipe arcs create ribbon synths that lock to the generated scale. Velocity becomes grain density.',
+  },
+  {
+    name: 'Pulse Weaving',
+    description:
+      'Index + thumb pinch captures a pulse loop. Move your palm to scatter echoes across the terrain.',
+  },
+];
+
 const SynesthesiaApp = () => {
   const canvasRef = useRef(null);
   const [activeMode, setActiveMode] = useState('traveler');
@@ -54,6 +72,8 @@ const SynesthesiaApp = () => {
   const [apiKey, setApiKey] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [neuralStatus, setNeuralStatus] = useState('Awaiting authentication');
+  const [cameraStatus, setCameraStatus] = useState('Camera offline');
+  const [handStatus, setHandStatus] = useState('Hand tracking idle');
 
   const skyGradient = useMemo(
     () => ({
@@ -180,6 +200,22 @@ const SynesthesiaApp = () => {
       setIsUnlocked(true);
     } else {
       setNeuralStatus('Key required to open neural interface');
+    }
+  };
+
+  const handleCameraAccess = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraStatus('Camera API unavailable in this browser');
+      return;
+    }
+    try {
+      setCameraStatus('Requesting camera access...');
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      setCameraStatus('Camera streaming to MediaPipe rig');
+      setHandStatus('Hand tracking calibrated');
+    } catch (error) {
+      setCameraStatus('Camera access denied');
+      setHandStatus('Hand tracking paused');
     }
   };
 
@@ -313,6 +349,28 @@ const SynesthesiaApp = () => {
           <p style={{ color: '#b8c3ff', fontSize: '14px' }}>
             Full 3D tracking mapped to Z-space. Push your hands toward the lens to plunge deep into the soundscape.
           </p>
+          <button
+            type="button"
+            onClick={handleCameraAccess}
+            style={{
+              marginTop: '12px',
+              padding: '10px 12px',
+              borderRadius: '12px',
+              border: '1px solid rgba(120, 150, 255, 0.45)',
+              background: 'rgba(30, 40, 90, 0.6)',
+              color: '#dfe6ff',
+              cursor: 'pointer',
+              width: '100%',
+              fontWeight: 600,
+            }}
+          >
+            Enable Camera + Hand Rig
+          </button>
+          <div style={{ marginTop: '10px', fontSize: '12px', color: '#9fb0ff' }}>
+            <p style={{ margin: '2px 0' }}>Camera: {cameraStatus}</p>
+            <p style={{ margin: '2px 0' }}>Hands: {handStatus}</p>
+          </div>
+
         </div>
       </header>
 
@@ -693,6 +751,37 @@ const SynesthesiaApp = () => {
               Terrain peaks saturate into neon bloom. Color temperature sets the harmonic weight and the timbre hue.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section
+        style={{
+          marginTop: '28px',
+          padding: '18px',
+          borderRadius: '22px',
+          border: '1px solid rgba(120, 150, 255, 0.2)',
+          background: 'rgba(10, 8, 26, 0.72)',
+        }}
+      >
+        <p style={{ fontSize: '12px', color: '#7f95ff', textTransform: 'uppercase' }}>
+          Natural AR Instrument System
+        </p>
+        <h3 style={{ margin: '8px 0 14px' }}>A hand language built for performance</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          {fingerSystems.map((system) => (
+            <div
+              key={system.name}
+              style={{
+                padding: '12px',
+                borderRadius: '16px',
+                border: '1px solid rgba(120, 150, 255, 0.2)',
+                background: 'rgba(18, 14, 36, 0.6)',
+              }}
+            >
+              <h4 style={{ margin: '0 0 8px' }}>{system.name}</h4>
+              <p style={{ color: '#b8c3ff', margin: 0 }}>{system.description}</p>
+            </div>
+          ))}
         </div>
       </section>
     </div>
