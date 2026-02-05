@@ -370,6 +370,7 @@ const SynesthesiaApp = () => {
             <p style={{ margin: '2px 0' }}>Camera: {cameraStatus}</p>
             <p style={{ margin: '2px 0' }}>Hands: {handStatus}</p>
           </div>
+
         </div>
       </header>
 
